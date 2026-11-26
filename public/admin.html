@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Console · StuHelper</title><link rel="stylesheet" href="assets/css/style.css">
+<style>
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}.gap{display:grid;gap:11px}.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bdg{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e0e7ff;color:#1d4ed8;white-space:nowrap}.bdg.ok{background:#dcfce7;color:#15803d}.bdg.bad{background:#fee2e2;color:#b91c1c}.bdg.warn{background:#fef3c7;color:#b45309}.bdg.mute{background:#eef0f6;color:#6b7280}
+.bar{height:9px;background:var(--surface-2);border-radius:99px;border:1px solid var(--line);overflow:hidden;margin:4px 0 12px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#1748a4,#3b82f6)}
+.toast{position:fixed;right:18px;bottom:18px;padding:11px 16px;border-radius:12px;font:700 13px Manrope,sans-serif;color:#fff;background:#047857;z-index:99;display:none;max-width:calc(100vw - 36px)}.toast.err{background:#b91c1c}
+.gate{max-width:380px;margin:12vh auto;padding:0 16px}.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.sm{padding:5px 10px!important;font-size:11px!important}
+.gate .panel{min-width:0;overflow:hidden}.gate .gap{grid-template-columns:minmax(0,1fr)}.gate img{max-width:100%;height:auto;max-height:90px;object-fit:contain;justify-self:start}.gate .field,.gate .btn{width:100%;box-sizing:border-box}
+.lbl{display:grid;gap:4px}.lbl>span{font-size:11px;font-weight:700;color:var(--muted)}
+.item{padding:13px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;justify-content:space-between;align-items:flex-start}.item:last-child{border-bottom:0}
+.item .grow{flex:1;min-width:0}.item h4{margin:0 0 3px;font:700 13.5px Manrope;overflow-wrap:anywhere}.item p{margin:4px 0 0;font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.chip2{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font:700 12px inherit;cursor:pointer;color:inherit}.chip2.on{background:#1748a4;color:#fff;border-color:#1748a4}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tools .field{flex:1;min-width:150px;width:auto}
+.attn{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;margin-bottom:8px;font-size:12.5px}
+.skel{padding:60px 0;text-align:center;color:var(--muted)}
+#nav{display:block}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+/* The shared stylesheet hides the sidebar off-screen on phones (needs the student menu button, which admin does not have). Keep the admin menu visible as a scrollable bar instead. */
+@media(max-width:700px){.sidebar{position:relative!important;transform:none!important;width:100%!important;height:auto!important;flex-basis:auto!important;padding:12px 14px!important;box-shadow:none!important}.sidebar .logo{margin:0 0 8px!important}.sidebar nav{display:flex!important;overflow-x:auto;gap:4px}.sidebar .nav-label{display:none}.sidebar .nav-item{white-space:nowrap;padding:9px 12px;font-size:12px}.sidebar-bottom{display:flex!important;margin-top:8px!important;gap:6px}.sidebar-bottom .nav-item{font-size:11px}.main-content{padding:16px 14px 40px!important}.r2{grid-template-columns:1fr}.item{flex-direction:column}.stats-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="assets/images/icon-192.png"><meta name="mobile-web-app-capable" content="yes"><script src="assets/js/pwa.js" defer></script></head><body>
+<div id="gate" class="gate"><div class="panel gap"><img class="brand-logo-image" src="assets/images/stuhelper-logo.png" alt="StuHelper"><h2 style="margin:0">Admin Sign In</h2><p class="muted small" id="gateMsg">Sign in with your administrator account.</p>
+<form id="loginForm" class="gap"><input class="field" id="aEmail" type="email" placeholder="Admin email" autocomplete="email" required><input class="field" id="aPass" type="password" placeholder="Password" autocomplete="current-password" required><button class="btn" type="submit" id="aBtn">Sign in 🛡️</button></form><a class="small" href="login.html?admin=1" style="color:#1748a4;font-weight:700">Forgot password? · Student login</a></div></div>
+<div class="app-container" id="app" style="display:none">
+<aside class="sidebar"><div class="logo"><img class="brand-logo-image" src="assets/images/stuhelper-logo.png" alt="StuHelper Admin"></div>
+<nav id="nav"><p class="nav-label">ADMINISTRATION</p></nav>
+<div class="sidebar-bottom"><a class="nav-item" href="index.html?preview=student"><span class="nav-icon">👁️</span>Student View</a><a class="nav-item" href="#" id="out"><span class="nav-icon">🚪</span>Sign out</a></div></aside>
+<main class="main-content"><header class="topbar"><div><h3>StuHelper Admin Console</h3><p id="who"></p></div><button class="btn secondary" id="refresh">↻ Refresh</button></header><div id="view"><div class="skel">Loading…</div></div></main></div>
+<dialog id="dlg" class="app-dialog"><form id="editForm"><div class="dialog-head"><h2 id="dlgTitle" style="margin:0">Edit</h2></div><div id="dlgBody" class="gap"></div><div class="row" style="justify-content:flex-end;margin-top:6px"><button type="button" class="btn ghost" id="dlgCancel">Cancel</button><button class="btn" id="dlgSave">Save changes</button></div></form></dialog>
+<div class="toast" id="toast"></div>
+<script type="module">
+import "./assets/js/auth.js";
+(()=>{
+const A=window.SH_AUTH;
+const $=i=>document.getElementById(i),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SEMS=['1st','2nd','3rd','4th','5th','6th','7th','8th'].map(s=>s+' Semester'),AUD=['All Semesters',...SEMS];
+const TABS={dash:'📊 Dashboard',students:'🎓 Students',notices:'📢 Notices & Exam',academics:'🗓️ Assignments & Syllabus',library:'📚 Library',requests:'📥 Requests',audit:'🧾 Audit Log'};
+
+/* ---- form definitions (used for both "add" forms and the edit dialog) ---- */
+const FIELDS={
+ notices:[{n:'title',l:'Title',req:1},{n:'audience',l:'Who sees it',t:'sel',o:AUD},{n:'priority',l:'Priority',t:'sel',o:['Normal','High','Info']},{n:'body',l:'Message',t:'area',req:1,p:'Details…'}],
+ assignments:[{n:'title',l:'Title',req:1},{n:'subject',l:'Subject'},{n:'due',l:'Due date',t:'date'},{n:'audience',l:'Who sees it',t:'sel',o:AUD},{n:'priority',l:'Priority',t:'sel',o:['Medium','High','Low']},{n:'minutes',l:'Estimated minutes',t:'number'},{n:'details',l:'Instructions',t:'area',p:'Instructions…'}],
+ syllabus:[{n:'subject',l:'Subject',req:1},{n:'chapter',l:'Unit / chapter',req:1},{n:'audience',l:'Who sees it',t:'sel',o:AUD},{n:'priority',l:'Priority',t:'sel',o:['Medium','High','Low']},{n:'target',l:'Target date',t:'date'}],
+ library_books:[{n:'title',l:'Title',req:1},{n:'author',l:'Author / subject'},{n:'semester',l:'Who sees it',t:'sel',o:AUD},{n:'resource_url',l:'Link (Drive / PDF / website)',t:'url',p:'https://…'}]
+};
+const field=(f,v)=>{v=v??'';const inp=f.t==='sel'?`<select class="field" name="${f.n}">${f.o.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select>`
+ :f.t==='area'?`<textarea class="field" name="${f.n}" rows="3" ${f.req?'required':''} placeholder="${esc(f.p||'')}">${esc(v)}</textarea>`
+ :`<input class="field" name="${f.n}" type="${f.t||'text'}" value="${esc(v)}" placeholder="${esc(f.p||'')}" ${f.req?'required':''} ${f.t==='number'?'min="1"':''}>`;
+ return `<label class="lbl"><span>${f.l}${f.req?' *':''}</span>${inp}</label>`};
+const formBody=(t,row={})=>{const F=FIELDS[t],half=F.filter(f=>f.t!=='area'&&!f.req);return F.map(f=>field(f,row[f.n])).join('')};
+
+const D={students:[],notices:[],assignments:[],syllabus:[],library_books:[],book_requests:[],settings:[],audit_log:[]};
+let me='',tab=(location.hash.slice(1)in TABS?location.hash.slice(1):'dash'),loaded=false;const F={q:'',sem:'',status:'Pending'};
+const toast=(m,e)=>{const t=$('toast');t.textContent=m;t.className='toast'+(e?' err':'');t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3500)};
+const empty=m=>`<div class="empty-state">${m}</div>`;
+const panel=(h,p,b)=>`<div class="panel"><div class="section-heading"><div><h2>${h}</h2><p>${p||''}</p></div></div>${b}</div>`;
+const B=(label,a,t,id,cls='secondary',x='')=>`<button class="btn ${cls} sm" data-a="${a}" data-t="${t}" data-id="${id}" ${x}>${label}</button>`;
+const pending=()=>D.book_requests.filter(r=>r.status==='Pending').length;
+const day=d=>d?new Date(d).toLocaleDateString():'—',dueDay=d=>d?new Date(d+'T00:00:00').toLocaleDateString():'No date';
+const today=()=>new Date().toISOString().slice(0,10);
+const audBdg=a=>`<span class="bdg ${!a||a==='All Semesters'?'mute':''}">${esc(a||'All Semesters')}</span>`;
+const match=(vals)=>!F.q||vals.join(' ').toLowerCase().includes(F.q.toLowerCase());
+const tools=(ph,withAud=true)=>`<div class="tools"><input class="field" id="q" placeholder="${ph}" value="${esc(F.q)}">${withAud?`<select class="field" id="semF" style="flex:0 0 auto;min-width:150px"><option value="">All semesters</option>${AUD.map(m=>`<option ${m===F.sem?'selected':''}>${m}</option>`).join('')}</select>`:''}</div>`;
+const audOk=a=>!F.sem||(a||'All Semesters')===F.sem||(a||'All Semesters')==='All Semesters';
+
+async function load(){try{Object.assign(D,await A.api('/api/admin/data'));loaded=true}catch(e){if(e.status===401||e.status===403)return location.replace('login.html?admin=1&expired=1');toast(e.message,1)}render()}
+async function act(method,path,body,msg){try{await A.api(path,{method,body});toast('✓ '+msg);await load();return true}catch(e){toast(e.message,1);return false}}
+
+const V={
+dash(){const s=D.students,act=s.filter(x=>x.status!=='Suspended').length,P=D.book_requests.filter(r=>r.status==='Pending');
+return `<section class="stats-row">${[['Students',s.length],['Active',act],['Pending requests',P.length],['Live notices',D.notices.filter(n=>n.active).length],['Assignments',D.assignments.length],['Syllabus chapters',D.syllabus.length],['Library items',D.library_books.length]].map(([a,b])=>`<div class="stat-card"><span>${a}</span><strong>${b}</strong></div>`).join('')}</section>
+<div class="g2">${panel('Needs your attention','Student requests waiting for a decision',P.slice(0,5).map(r=>`<div class="attn"><div><strong>${esc(r.title)}</strong><div class="muted small">${esc(r.student_name)} · ${esc(r.semester||'')} · ${esc(r.req_type||'')}</div></div><div class="row">${B('Approve','set','book_requests',r.id,'secondary','data-f="status" data-v="Approved"')}${B('Reject','set','book_requests',r.id,'danger','data-f="status" data-v="Rejected"')}</div></div>`).join('')+(P.length>5?`<a href="#requests" class="small" style="font-weight:700;color:#1748a4">See all ${P.length} requests →</a>`:'')||empty('All caught up ✅'))}
+${panel('Quick actions','Publish something for students',`<div class="row"><a class="btn sm" href="#notices">📢 New notice</a><a class="btn sm" href="#academics">🗓️ New assignment</a><a class="btn sm" href="#library">📚 Add to library</a></div>`)}
+${panel('Students by semester','Enrollment',SEMS.map(m=>{const n=s.filter(x=>x.semester===m).length,p=s.length?Math.round(n*100/s.length):0;return `<div class="row" style="justify-content:space-between"><b class="small">${m}</b><span class="small">${n} (${p}%)</span></div><div class="bar"><i style="width:${p}%"></i></div>`}).join(''))}
+${panel('Recent admin activity','Last 8 actions',D.audit_log.slice(0,8).map(l=>`<div class="item"><div class="grow"><h4>${esc(l.action)}</h4><div class="muted small">${esc(l.actor)} · ${new Date(l.created_at).toLocaleString()}</div></div></div>`).join('')||empty('No activity yet.'))}</div>`},
+
+students(){const L=D.students.filter(s=>(!F.sem||s.semester===F.sem)&&match([s.full_name,s.email,s.roll_no,s.course,s.phone]));
+return panel(`Students (${L.length}/${D.students.length})`,'Search, suspend, export',`<div class="tools"><input class="field" id="q" placeholder="Search name, email, roll no, phone…" value="${esc(F.q)}"><select class="field" id="semF" style="flex:0 0 auto;min-width:150px"><option value="">All semesters</option>${SEMS.map(m=>`<option ${m===F.sem?'selected':''}>${m}</option>`).join('')}</select><button class="btn secondary" data-a="csv">⬇ CSV</button></div>`+
+(L.map(s=>`<div class="item"><div class="grow"><h4>${esc(s.full_name)} <span class="bdg ${s.status==='Suspended'?'bad':'ok'}">${esc(s.status)}</span></h4><div class="muted small">${esc(s.email)} · ${esc(s.phone||'—')} · Roll ${esc(s.roll_no||'—')} · ${esc(s.course||'')} ${esc(s.semester||'')} · Joined ${day(s.created_at)}</div></div><div class="row">${B(s.status==='Suspended'?'Activate':'Suspend','set','students',s.id,'secondary',`data-f="status" data-v="${s.status==='Suspended'?'Active':'Suspended'}"`)}${B('Delete','del','students',s.id,'danger')}</div></div>`).join('')||empty('No students found.')))},
+
+notices(){const ex=(D.settings.find(x=>x.key==='exam')||{}).value||{},L=D.notices.filter(n=>match([n.title,n.body])&&audOk(n.audience));
+return `<div class="g2"><div class="gap">${panel('Broadcast notice','Shows at the top of every student page for the chosen semester',`<form class="gap" data-t="notices">${formBody('notices')}<button class="btn">📢 Publish notice</button></form>`)}
+${panel('Official exam date','Becomes the exam countdown for all students',`<form class="gap" id="examForm"><label class="lbl"><span>Exam label</span><input class="field" name="title" placeholder="End-Sem Exams" value="${esc(ex.title||'')}"></label><label class="lbl"><span>Date</span><input class="field" name="date" type="date" required value="${esc(ex.date||'')}"></label><button class="btn">Save exam date</button><p class="muted small" style="margin:0">${ex.date?`Current: ${esc(ex.title)} — ${esc(ex.date)}`:'Not set.'}</p></form>`)}</div>
+${panel(`Notices (${L.length}/${D.notices.length})`,'Edit, hide or delete',tools('Search notices…')+(L.map(n=>`<div class="item" style="opacity:${n.active?1:.55}"><div class="grow"><h4>${esc(n.title)} <span class="bdg ${n.priority==='High'?'bad':''}">${esc(n.priority)}</span> ${audBdg(n.audience)} <span class="bdg ${n.active?'ok':'mute'}">${n.active?'Live':'Hidden'}</span></h4><p>${esc(n.body)}</p><small class="muted">${day(n.created_at)}</small></div><div class="row">${B('Edit','edit','notices',n.id)}${B(n.active?'Hide':'Show','set','notices',n.id,'secondary',`data-f="active" data-v="${!n.active}"`)}${B('Delete','del','notices',n.id,'danger')}</div></div>`).join('')||empty('No notices.')))}</div>`},
+
+academics(){const row=(t,r,a,b,extra='')=>`<div class="item"><div class="grow"><h4>${esc(a)} ${audBdg(r.audience)} ${extra}</h4><div class="muted small">${esc(b)}</div>${r.details?`<p class="muted small">${esc(r.details)}</p>`:''}</div><div class="row">${B('Edit','edit',t,r.id)}${B('Delete','del',t,r.id,'danger')}</div></div>`;
+const A2=D.assignments.filter(a=>match([a.title,a.subject,a.details])&&audOk(a.audience)),S2=D.syllabus.filter(a=>match([a.subject,a.chapter])&&audOk(a.audience));
+return `<div class="g2"><div class="gap">${panel('Push assignment','Shows in Assignments and Deadlines for the chosen semester',`<form class="gap" data-t="assignments">${formBody('assignments')}<button class="btn">Push assignment</button></form>`)}
+${panel('Push syllabus chapter','Shows in the Syllabus tracker for the chosen semester',`<form class="gap" data-t="syllabus">${formBody('syllabus')}<button class="btn">Push chapter</button></form>`)}</div>
+<div class="gap">${panel(`Assignments (${A2.length}/${D.assignments.length})`,'',tools('Search assignments & syllabus…')+(A2.map(a=>row('assignments',a,a.title,`${a.subject||'General'} · due ${dueDay(a.due)} · ${a.priority}${a.minutes?' · ~'+a.minutes+' min':''}`,a.due&&a.due<today()?'<span class="bdg bad">Past due</span>':'')).join('')||empty('No assignments.')))}
+${panel(`Syllabus (${S2.length}/${D.syllabus.length})`,'',S2.map(a=>row('syllabus',a,`${a.subject}: ${a.chapter}`,`${a.priority}${a.target?' · target '+dueDay(a.target):''}`)).join('')||empty('No syllabus chapters.'))}</div></div>`},
+
+library(){const L=D.library_books.filter(b=>match([b.title,b.author])&&(!F.sem||(b.semester||'All Semesters')===F.sem||(b.semester||'All Semesters')==='All Semesters'));
+return `<div class="g2">${panel('Add book / PDF / link','Appears in the Library of the chosen semester. Students cannot delete it.',`<form class="gap" data-t="library_books">${formBody('library_books')}<button class="btn">Add to library</button><p class="muted small" style="margin:0">Tip: upload the file to Google Drive, set sharing to "Anyone with the link", and paste the link here.</p></form>`)}
+${panel(`Catalog (${L.length}/${D.library_books.length})`,'',tools('Search catalog…')+(L.map(b=>`<div class="item"><div class="grow"><h4>${esc(b.title)} ${audBdg(b.semester)}</h4><div class="muted small">${esc(b.author||'General')} · added ${day(b.created_at)}</div>${b.resource_url?`<a href="${esc(b.resource_url)}" target="_blank" rel="noopener" class="small" style="color:#1748a4;font-weight:700">Open link ↗</a>`:'<span class="bdg warn">No link</span>'}</div><div class="row">${B('Edit','edit','library_books',b.id)}${B('Delete','del','library_books',b.id,'danger')}</div></div>`).join('')||empty('Nothing in the catalog.')))}</div>`},
+
+requests(){const cnt=s=>D.book_requests.filter(r=>s==='All'||r.status===s).length,L=D.book_requests.filter(r=>F.status==='All'||r.status===F.status);
+return panel(`Student requests (${pending()} pending)`,'Approve or reject. Students see the status in their Library.',`<div class="chips">${['Pending','Approved','Rejected','All'].map(s=>`<button class="chip2 ${F.status===s?'on':''}" data-status="${s}">${s} (${cnt(s)})</button>`).join('')}</div>`+
+(L.map(r=>`<div class="item"><div class="grow"><h4>${esc(r.title)} <span class="bdg ${r.status==='Approved'?'ok':r.status==='Rejected'?'bad':'warn'}">${esc(r.status)}</span></h4><div class="muted small">${esc(r.student_name)} · ${esc(r.roll_no||'')} · ${esc(r.semester||'')} · ${esc(r.req_type||'')} · ${day(r.created_at)}</div>${r.details?`<p class="small">${esc(r.details)}</p>`:''}</div><div class="row">${r.status!=='Approved'?B('Approve','set','book_requests',r.id,'secondary','data-f="status" data-v="Approved"'):''}${r.status!=='Rejected'?B('Reject','set','book_requests',r.id,'secondary','data-f="status" data-v="Rejected"'):''}${B('Delete','del','book_requests',r.id,'danger')}</div></div>`).join('')||empty('No requests here.')))},
+
+audit(){const L=D.audit_log.filter(l=>match([l.action,l.actor])).slice(0,100);return panel('Audit log','Last 100 admin actions',tools('Search actions…',false)+(L.map(l=>`<div class="item"><div class="grow"><h4>${esc(l.action)}</h4><div class="muted small">${esc(l.actor)} · ${new Date(l.created_at).toLocaleString()}</div></div></div>`).join('')||empty('Empty.')))}};
+
+function render(){if(!loaded){return}
+$('nav').innerHTML='<p class="nav-label">ADMINISTRATION</p>'+Object.entries(TABS).map(([k,v])=>`<a href="#${k}" class="nav-item ${k===tab?'active':''}" data-tab="${k}">${v}${k==='requests'&&pending()?` <span class="bdg warn">${pending()}</span>`:''}</a>`).join('');$('view').innerHTML=V[tab]()}
+const go=t=>{tab=t in TABS?t:'dash';F.q='';F.sem='';render();scrollTo(0,0)};
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
+
+/* ---- edit dialog ---- */
+let editing=null;
+function openEdit(t,id){const key=t==='library_books'?'library_books':t,row=D[key].find(r=>r.id===id);if(!row)return;editing={t,id};$('dlgTitle').textContent='Edit '+({notices:'notice',assignments:'assignment',syllabus:'syllabus chapter',library_books:'library item'}[t]);$('dlgBody').innerHTML=formBody(t,row);$('dlg').showModal()}
+$('dlgCancel').onclick=()=>$('dlg').close();
+
+document.addEventListener('click',async e=>{const c=e.target.closest('[data-status]');if(c){F.status=c.dataset.status;return render()}
+const n=e.target.closest('[data-tab]');if(n){e.preventDefault();location.hash=n.dataset.tab;return}
+const b=e.target.closest('[data-a]');if(!b)return;const{a,t,id,f,v}=b.dataset;
+if(a==='edit')return openEdit(t,id);
+if(a==='del'){const ok=confirm(t==='students'?'Remove this student profile and their synced study data?\n\nTip: use Suspend to just block sign-in. The login account itself must be removed in Netlify Identity.':'Delete permanently? Students will stop seeing it.');if(ok)act('DELETE',`/api/admin/${t}/${id}`,null,'Deleted from '+t)}
+if(a==='set')act('PATCH',`/api/admin/${t}/${id}`,{[f]:v==='true'?true:v==='false'?false:v},`Updated ${t.replace('_',' ')}`);
+if(a==='csv'){const rows=[['Name','Email','Phone','Roll','Course','Semester','Status'],...D.students.map(s=>[s.full_name,s.email,s.phone,s.roll_no,s.course,s.semester,s.status])];const u=URL.createObjectURL(new Blob([rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'}));Object.assign(document.createElement('a'),{href:u,download:'students.csv'}).click()}});
+document.addEventListener('input',e=>{if(e.target.id==='q'){F.q=e.target.value;const p=e.target.selectionStart;render();const i=$('q');i.focus();i.setSelectionRange(p,p)}});
+document.addEventListener('change',e=>{if(e.target.id==='semF'){F.sem=e.target.value;render()}});
+
+document.addEventListener('submit',async e=>{const f=e.target;if(f.id==='loginForm')return;e.preventDefault();
+const btn=f.querySelector('button:not([type=button])');if(btn)btn.disabled=true;
+try{
+ if(f.id==='examForm'){const o=Object.fromEntries(new FormData(f));await act('PUT','/api/admin/settings/exam',o,'Exam date saved')}
+ else if(f.id==='editForm'){const o=Object.fromEntries(new FormData(f));if(await act('PATCH',`/api/admin/${editing.t}/${editing.id}`,o,'Changes saved'))$('dlg').close()}
+ else{const t=f.dataset.t,o=Object.fromEntries(new FormData(f));for(const k in o)if(o[k]==='')delete o[k];if(o.minutes)o.minutes=+o.minutes;if(await act('POST','/api/admin/'+t,o,'Published'))f.reset()}
+}finally{if(btn)btn.disabled=false}});
+
+$('loginForm').onsubmit=async e=>{e.preventDefault();const b=$('aBtn');b.disabled=true;b.textContent='Verifying…';try{await A.Identity.login($('aEmail').value.trim().toLowerCase(),$('aPass').value);await boot(true)}catch(err){toast(/invalid|401|password/i.test(String(err.message))?'Incorrect email or password.':err.message,1)}finally{b.disabled=false;b.textContent='Sign in 🛡️'}};
+$('out').onclick=async e=>{e.preventDefault();await A.logout();location.href='login.html?signedout=1'};$('refresh').onclick=load;
+async function boot(fromLogin){let u=null;try{u=await A.Identity.getUser()}catch{}if(!u)return;
+let info;try{info=await A.loadMe()}catch(e){if(fromLogin)toast(e.message,1);return}
+if(!info.isAdmin){$('gateMsg').textContent='This account does not have administrator access.';await A.logout();return}
+me=info.user.email;$('who').textContent='Signed in: '+me;$('gate').style.display='none';$('app').style.display='';load()}
+boot();
+})();
+</script></body></html>
